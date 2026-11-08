@@ -1,0 +1,47 @@
+# Vendor-specific EXTRACTION template example.
+# Acme's invoices say "Bill No." instead of "Invoice #", and list items as
+# "SKU  Description  Qty x Price = Amount". We only override those rules.
+extends: default
+name: acme-supplies
+description: Example vendor template (Acme Supplies Co.) - custom number & line format.
+
+match:
+  - 'Acme Supplies'
+  - 'Bill\s+No\.'
+
+fields:
+  seller.name: {type: string, extract_default: Acme Supplies Co.}
+  items:
+    type: list
+    item_fields:
+      sku:         {type: string}
+      description: {type: string}
+      quantity:    {type: number}
+      unit_price:  {type: money}
+      amount:      {type: money}
+
+extract:
+  fields:
+    invoice_number: {label: 'Bill No.'}
+    issue_date:
+      patterns: ['Bill\s+Date\s*:?\s*(?P<value>\d{2}/\d{2}/\d{4})']
+      formats: ['%m/%d/%Y']
+    seller.name: {value: Acme Supplies Co.}
+  line_items:
+    mode: rows
+    start: '^\s*SKU\b'
+    end: '^\s*(?:sub\s*total|total)\b'
+    row:
+      - '^(?P<sku>[A-Z]{2,4}-\d+)\s+(?P<description>.+?)\s+(?P<quantity>\d+)\s*x\s*\$?(?P<unit_price>[\d,]+\.\d{2})\s*=\s*\$?(?P<amount>[\d,]+\.\d{2})$'
+
+render:
+  pdf:
+    accent_color: "#b5121b"
+    columns:
+      - {key: sku,         label: SKU,         width: 0.14}
+      - {key: description, label: Description, width: 0.42}
+      - {key: quantity,    label: Qty,         width: 0.1, align: right, format: num}
+      - {key: unit_price,  label: Unit Price,  width: 0.17, align: right, format: money}
+      - {key: amount,      label: Amount,      width: 0.17, align: right, format: money}
+  labels:
+    col_sku: SKU

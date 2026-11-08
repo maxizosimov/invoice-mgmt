@@ -1,0 +1,32 @@
+invoice_number: INV-2026-0042
+issue_date: '2026-11-08'
+due_date: '2026-12-08'
+po_number: PO-7781
+currency: USD
+seller:
+  name: Northwind Studio LLC
+  address: '500 Market Street, Suite 12
+
+    San Francisco, CA 94105'
+  email: billing@northwind.example
+  phone: +1 415 555 0100
+buyer:
+  name: Contoso Ltd.
+  address: '1 Harbor Way
+
+    Seattle, WA 98101'
+  email: ap@contoso.example
+items:
+- description: Website redesign
+  quantity: 1
+  unit_price: 4200.0
+- description: Consulting hours
+  quantity: 12.5
+  unit_price: 150.0
+- description: Hosting (12 months)
+  quantity: 12
+  unit_price: 25.0
+tax_rate: 8.5
+payment_terms: Net 30
+payment_instructions: Bank transfer to ACME Bank, IBAN US00 0000 0000 0000
+notes: Thank you for choosing Northwind Studio.

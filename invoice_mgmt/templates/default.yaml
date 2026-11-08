@@ -1,0 +1,200 @@
+# Base invoice template. Every other template can `extends: default` and override
+# only the bits that differ (patterns, labels, colors, columns...).
+name: default
+description: Generic invoice - broad extraction patterns and a clean PDF/HTML layout.
+
+# Text patterns that identify documents this template fits (used by --template auto).
+# The generic template keeps this empty so vendor-specific templates win.
+match: []
+
+# ---------------------------------------------------------------------------
+# Data model. Dotted paths are nested keys (seller.name -> {"seller": {"name": ..}}).
+# Types: string, multiline, number, money, integer, date. `default` is applied when
+# filling (use "today" for the current date); `required` produces warnings.
+# ---------------------------------------------------------------------------
+fields:
+  invoice_number:  {type: string, required: true, label: Invoice number}
+  issue_date:      {type: date, required: true, default: today, label: Invoice date}
+  due_date:        {type: date, label: Due date}
+  po_number:       {type: string, label: Purchase order}
+  currency:        {type: string, default: USD}
+  seller.name:     {type: string, required: true}
+  seller.address:  {type: multiline}
+  seller.email:    {type: string}
+  seller.phone:    {type: string}
+  seller.tax_id:   {type: string}
+  buyer.name:      {type: string, required: true}
+  buyer.address:   {type: multiline}
+  buyer.email:     {type: string}
+  ship_to.name:    {type: string}
+  ship_to.address: {type: multiline}
+  items:
+    type: list
+    item_fields:
+      description: {type: string}
+      quantity:    {type: number}
+      unit_price:  {type: money}
+      amount:      {type: money}
+  subtotal:        {type: money}
+  discount:        {type: money}
+  tax_rate:        {type: number, label: Tax rate (%)}
+  tax:             {type: money}
+  shipping:        {type: money}
+  total:           {type: money, required: true}
+  payment_terms:   {type: string}
+  payment_instructions: {type: multiline}
+  notes:           {type: multiline}
+
+# ---------------------------------------------------------------------------
+# Extraction rules (text from PDF / DOCX / TXT). Per field use any of:
+#   patterns: [regex, ...]   first match wins; uses group `value` or group 1
+#   label: "Invoice #"       value = rest of the line after the label
+#   block: {start, until, max_lines, select}  multi-line capture after a heading
+#   value: constant
+# Regexes are case-insensitive & multiline by default (override with flags: "ims").
+# Run `invoice inspect file.pdf` to see the raw text these patterns run against.
+# ---------------------------------------------------------------------------
+extract:
+  # Extra date formats tried first for every date field. Numeric dates default to
+  # US month-first; use ['%d/%m/%Y'] etc. for day-first documents.
+  date_formats: []
+  fields:
+    invoice_number:
+      patterns:
+        - '(?:invoice|inv)\s*(?:#|no\.?|number|num(?:ber)?)\s*[:.]?\s*(?P<value>[A-Z0-9][A-Z0-9\-/_.]*\d[A-Z0-9\-/_]*)'
+        - '^\s*invoice\s*[:#]\s*(?P<value>[A-Z0-9][A-Z0-9\-/_.]*)'
+    issue_date:
+      patterns:
+        - '(?:invoice\s+date|date\s+of\s+issue|issue\s+date|issued(?:\s+on)?|date\s+issued)\s*[:.]?\s*(?P<value>\d{4}-\d{2}-\d{2}|\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}|[A-Z][a-z]+\.?\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\s+[A-Z][a-z]+\.?\s+\d{4})'
+        - '^\s*date\s*[:.]?\s*(?P<value>\d{4}-\d{2}-\d{2}|\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}|[A-Z][a-z]+\.?\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\s+[A-Z][a-z]+\.?\s+\d{4})'
+    due_date:
+      patterns:
+        - '(?:due\s+date|payment\s+due|due\s+on|due)\s*[:.]?\s*(?P<value>\d{4}-\d{2}-\d{2}|\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}|[A-Z][a-z]+\.?\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\s+[A-Z][a-z]+\.?\s+\d{4})'
+    po_number:
+      patterns:
+        - '(?:P\.?O\.?|purchase\s+order)\s*(?:#|no\.?|number)?\s*[:.]?\s*(?P<value>[A-Z0-9][A-Z0-9\-]*\d[A-Z0-9\-]*)'
+    currency:
+      patterns: ['\b(?P<value>USD|EUR|GBP|CAD|AUD|NZD|JPY|CHF|INR|SEK|NOK|DKK|PLN|MXN|BRL)\b']
+    seller.name:
+      # first line of the document (skipping a lone "INVOICE" title line)
+      patterns: ['\A(?:\s*(?:tax\s+)?invoice\s*\n)?\s*(?P<value>[^\n]+?)(?:\s{2,}|\s+(?:tax\s+)?INVOICE\b|[ \t]*$)']
+      flags: im
+    seller.email:
+      patterns: ['(?P<value>[\w.+-]+@[\w-]+(?:\.[\w-]+)+)']
+    buyer.name:
+      block:
+        start: '^\s*(?:bill(?:ed)?\s+to|invoice\s+to|sold\s+to|customer)\b\s*:?'
+        until: '^\s*(?:ship\s+to|description|item|date|invoice)\b'
+        max_lines: 6
+        select: "0"
+    buyer.address:
+      block:
+        start: '^\s*(?:bill(?:ed)?\s+to|invoice\s+to|sold\s+to|customer)\b\s*:?'
+        until: '^\s*(?:ship\s+to|description|item|date|invoice|qty)\b'
+        max_lines: 6
+        select: "1:"
+        exclude: ['@', '^\s*(?:tel|phone|\+?\d[\d ()-]{7,}$)']
+    buyer.email:
+      patterns: ['(?:bill(?:ed)?\s+to|invoice\s+to|sold\s+to|customer)\b[^@]{0,300}?(?P<value>[\w.+-]+@[\w-]+(?:\.[\w-]+)+)']
+      flags: is
+    subtotal:
+      patterns: ['^\s*sub\s*-?\s*total\b[^\n]*?(?P<value>-?[\d,]+\.\d{2})\s*$']
+    discount:
+      patterns: ['^\s*discount\b[^\n]*?(?P<value>[\d,]+\.\d{2})\s*$']
+    tax_rate:
+      patterns: ['(?:sales\s+)?(?:tax|vat|gst|hst)\s*\(?\s*@?\s*(?P<value>\d+(?:\.\d+)?)\s*%']
+    tax:
+      patterns: ['^\s*(?:sales\s+)?(?:tax|vat|gst|hst)\b[^\n]*?(?P<value>[\d,]+\.\d{2})\s*$']
+    shipping:
+      patterns: ['^\s*(?:shipping|freight|delivery)\b[^\n]*?(?P<value>[\d,]+\.\d{2})\s*$']
+    total:
+      patterns:
+        - '^\s*(?:grand\s+total|total\s+due|amount\s+due|balance\s+due|total\s+amount)\b[^\n]*?(?P<value>-?[\d,]+\.\d{2})\s*$'
+        - '^\s*total\b[^\n]*?(?P<value>-?[\d,]+\.\d{2})\s*$'
+    payment_terms:
+      patterns: ['^\s*(?:payment\s+)?terms\s*:?\s*(?P<value>[^\n]+)$', '\b(?P<value>net\s*\d{1,3})\b']
+    payment_instructions:
+      block: {start: '^\s*payment\s+(?:instructions|details|info)\b\s*:?', until: '^\s*notes?\b', max_lines: 6}
+    notes:
+      block: {start: '^\s*notes?\b\s*:?', until: '^\s*(?:thank you for your business|page\s+\d+)', max_lines: 8}
+
+  # Optional: values from fillable PDF form fields, {field path: "PDF field name"}
+  form_fields: {}
+
+  # Line items. Two strategies (mode: auto tries table first, then rows):
+  #   table: match real table header cells against `columns` regexes
+  #   rows:  apply `row` regex (named groups) to each line between `start` and `end`
+  line_items:
+    mode: auto
+    start: '^\s*(?:description|item|service|product|details)s?\b.*\b(?:qty|quantity|hours|hrs|units?)\b'
+    end: '^\s*(?:sub\s*-?\s*total|total|tax|vat|amount\s+due|balance)\b'
+    row:
+      - '^(?P<description>.+?)\s+(?P<quantity>\d+(?:\.\d+)?)\s+\D{0,3}\s?(?P<unit_price>[\d,]+\.\d{2})\s+\D{0,3}\s?(?P<amount>[\d,]+\.\d{2})$'
+    skip: ['^\s*page\s+\d+']
+    continuation: true
+    columns:
+      description: ['descr', '^item', 'service', 'product', 'details']
+      quantity: ['qty', 'quantity', 'hours', 'hrs', 'units']
+      unit_price: ['unit\s*price', 'unit\s*cost', 'rate', '^price']
+      amount: ['amount', 'line\s*total', '^total']
+
+# ---------------------------------------------------------------------------
+# Rendering / filling
+# ---------------------------------------------------------------------------
+render:
+  currency_symbol: "$"
+  symbol_position: before     # before | after
+  decimals: 2
+  thousands_separator: ","
+  decimal_separator: "."
+  date_format: "%B %d, %Y"    # strftime format used in output
+  labels:                     # every visible label can be renamed / translated
+    title: INVOICE
+    invoice_number: "Invoice #"
+    issue_date: Invoice Date
+    due_date: Due Date
+    po_number: "PO #"
+    bill_to: Bill To
+    ship_to: Ship To
+    col_description: Description
+    col_quantity: Qty
+    col_unit_price: Unit Price
+    col_amount: Amount
+    subtotal: Subtotal
+    discount: Discount
+    tax: Tax
+    shipping: Shipping
+    total: Total
+    payment_terms: Payment Terms
+    payment_instructions: Payment Instructions
+    notes: Notes
+    tax_id: Tax ID
+
+  pdf:
+    page_size: letter          # letter | a4
+    accent_color: "#1f4e79"
+    muted_color: "#666666"
+    zebra_color: "#f3f6f9"
+    font: Helvetica
+    font_bold: Helvetica-Bold
+    font_size: 9.5
+    margin_mm: 18
+    logo: null                 # path relative to this YAML, e.g. logo.png
+    logo_height_mm: 14
+    footer: "Thank you for your business!"
+    columns:
+      - {key: description, label: Description, width: 0.52}
+      - {key: quantity,    label: Qty,         width: 0.12, align: right, format: num}
+      - {key: unit_price,  label: Unit Price,  width: 0.18, align: right, format: money}
+      - {key: amount,      label: Amount,      width: 0.18, align: right, format: money}
+
+  html:
+    template: invoice.html.j2  # any Jinja file; copy & edit for a custom look
+  text:
+    template: invoice.txt.j2
+  docx:
+    template: null             # a .docx with {{ placeholders }}; null = built-in starter layout
+  pdf_form:
+    file: null                 # a fillable PDF
+    fields: {}                 # {"PDF field name": "seller.name" or "{{ total | money }}"}
+    flatten: false

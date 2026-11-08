@@ -1,0 +1,105 @@
+{#- Default HTML layout. Copy this file next to your template YAML, edit it, and point
+    render.html.template at it. Available: every invoice field, `labels`, `render`,
+    and the filters `money`, `date`, `num`. -#}
+{% set accent = (render.pdf or {}).accent_color or render.accent_color or "#1f4e79" %}
+<!doctype html>
+<html lang="{{ render.lang or 'en' }}">
+<head>
+<meta charset="utf-8">
+<title>{{ labels.title or "Invoice" }} {{ invoice_number }}</title>
+<style>
+  :root { --accent: {{ accent }}; --muted: #666; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+         color: #222; max-width: 820px; margin: 32px auto; padding: 0 16px; font-size: 14px; }
+  header { display: flex; justify-content: space-between; gap: 24px; }
+  h1 { color: var(--accent); margin: 0; font-size: 34px; text-align: right; letter-spacing: .04em; }
+  .seller-name { font-size: 20px; font-weight: 700; }
+  .muted { color: var(--muted); white-space: pre-line; }
+  .meta td { padding: 2px 0 2px 16px; text-align: right; }
+  .meta td:first-child { color: var(--muted); }
+  .parties { display: flex; gap: 48px; margin: 32px 0; }
+  .parties h3 { color: var(--accent); font-size: 13px; text-transform: uppercase; margin: 0 0 4px; }
+  .pre { white-space: pre-line; }
+  table.items { width: 100%; border-collapse: collapse; }
+  table.items th { background: var(--accent); color: #fff; text-align: left; padding: 8px; }
+  table.items td { padding: 8px; border-bottom: 1px solid #e5e5e5; vertical-align: top; }
+  table.items tr:nth-child(even) td { background: #f6f8fa; }
+  .r { text-align: right !important; }
+  table.totals { margin: 16px 0 0 auto; min-width: 280px; }
+  table.totals td { padding: 4px 8px; text-align: right; }
+  table.totals tr.total td { font-weight: 700; font-size: 18px; color: var(--accent);
+                             border-top: 2px solid var(--accent); }
+  section.notes h3 { color: var(--accent); font-size: 13px; margin: 24px 0 4px; }
+  @media print { body { margin: 0; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="seller-name">{{ seller.name }}</div>
+    <div class="muted">{{ seller.address }}{% if seller.email %}
+{{ seller.email }}{% endif %}{% if seller.phone %}
+{{ seller.phone }}{% endif %}{% if seller.tax_id %}
+{{ labels.tax_id or "Tax ID" }}: {{ seller.tax_id }}{% endif %}</div>
+  </div>
+  <div>
+    <h1>{{ labels.title or "INVOICE" }}</h1>
+    <table class="meta">
+      <tr><td>{{ labels.invoice_number or "Invoice #" }}</td><td>{{ invoice_number }}</td></tr>
+      <tr><td>{{ labels.issue_date or "Invoice Date" }}</td><td>{{ issue_date | date }}</td></tr>
+      {% if due_date %}<tr><td>{{ labels.due_date or "Due Date" }}</td><td>{{ due_date | date }}</td></tr>{% endif %}
+      {% if po_number %}<tr><td>{{ labels.po_number or "PO #" }}</td><td>{{ po_number }}</td></tr>{% endif %}
+    </table>
+  </div>
+</header>
+
+<div class="parties">
+  <div>
+    <h3>{{ labels.bill_to or "Bill To" }}</h3>
+    <strong>{{ buyer.name }}</strong>
+    <div class="pre">{{ buyer.address }}{% if buyer.email %}
+{{ buyer.email }}{% endif %}</div>
+  </div>
+  {% if ship_to and (ship_to.name or ship_to.address) %}
+  <div>
+    <h3>{{ labels.ship_to or "Ship To" }}</h3>
+    <strong>{{ ship_to.name }}</strong>
+    <div class="pre">{{ ship_to.address }}</div>
+  </div>
+  {% endif %}
+</div>
+
+<table class="items">
+  <thead><tr>
+    <th>{{ labels.col_description or "Description" }}</th>
+    <th class="r">{{ labels.col_quantity or "Qty" }}</th>
+    <th class="r">{{ labels.col_unit_price or "Unit Price" }}</th>
+    <th class="r">{{ labels.col_amount or "Amount" }}</th>
+  </tr></thead>
+  <tbody>
+  {% for item in items %}
+    <tr>
+      <td>{{ item.description }}</td>
+      <td class="r">{{ item.quantity | num }}</td>
+      <td class="r">{{ item.unit_price | money }}</td>
+      <td class="r">{{ item.amount | money }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<table class="totals">
+  <tr><td>{{ labels.subtotal or "Subtotal" }}</td><td>{{ subtotal | money }}</td></tr>
+  {% if discount %}<tr><td>{{ labels.discount or "Discount" }}</td><td>-{{ discount | money }}</td></tr>{% endif %}
+  {% if tax is not none and tax != "" %}<tr><td>{{ labels.tax or "Tax" }}{% if tax_rate %} ({{ tax_rate | num }}%){% endif %}</td><td>{{ tax | money }}</td></tr>{% endif %}
+  {% if shipping %}<tr><td>{{ labels.shipping or "Shipping" }}</td><td>{{ shipping | money }}</td></tr>{% endif %}
+  <tr class="total"><td>{{ labels.total or "Total" }}</td><td>{{ total | money }}</td></tr>
+</table>
+
+<section class="notes">
+  {% if payment_terms %}<h3>{{ labels.payment_terms or "Payment Terms" }}</h3><div class="pre">{{ payment_terms }}</div>{% endif %}
+  {% if payment_instructions %}<h3>{{ labels.payment_instructions or "Payment Instructions" }}</h3><div class="pre">{{ payment_instructions }}</div>{% endif %}
+  {% if notes %}<h3>{{ labels.notes or "Notes" }}</h3><div class="pre">{{ notes }}</div>{% endif %}
+</section>
+</body>
+</html>

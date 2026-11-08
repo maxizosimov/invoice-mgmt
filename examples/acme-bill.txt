@@ -1,0 +1,24 @@
+Acme Supplies Co.
+77 Industrial Pkwy, Dayton, OH 45402
+orders@acme-supplies.example
+
+Bill No. AS-55120
+Bill Date: 10/28/2026
+Due: 11/27/2026
+
+Bill To:
+Northwind Studio LLC
+500 Market Street, Suite 12
+San Francisco, CA 94105
+
+SKU      Description                 Qty x Price = Amount
+PP-100   Printer paper, A4 (box)     4 x $32.50 = $130.00
+TN-220   Toner cartridge black       2 x $89.99 = $179.98
+         high-yield
+ST-009   Stapler, heavy duty         1 x $24.00 = $24.00
+
+Subtotal: $333.98
+Sales Tax (7%): $23.38
+Total Due: $357.36
+
+Terms: Net 30

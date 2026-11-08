@@ -1,0 +1,31 @@
+{{ labels.title or "INVOICE" }}
+{{ seller.name }}
+{{ seller.address }}
+{% if seller.email %}{{ seller.email }}
+{% endif %}
+
+{{ labels.invoice_number or "Invoice #" }}: {{ invoice_number }}
+{{ labels.issue_date or "Invoice Date" }}: {{ issue_date | date }}
+{% if due_date %}{{ labels.due_date or "Due Date" }}: {{ due_date | date }}
+{% endif %}
+{% if po_number %}{{ labels.po_number or "PO #" }}: {{ po_number }}
+{% endif %}
+
+{{ labels.bill_to or "Bill To" }}:
+{{ buyer.name }}
+{{ buyer.address }}
+
+{{ "%-40s %8s %12s %12s" | format(labels.col_description or "Description", labels.col_quantity or "Qty", labels.col_unit_price or "Unit Price", labels.col_amount or "Amount") }}
+{% for item in items %}
+{{ "%-40s %8s %12s %12s" | format(item.description, item.quantity | num, item.unit_price | money, item.amount | money) }}
+{% endfor %}
+
+{{ labels.subtotal or "Subtotal" }}: {{ subtotal | money }}
+{% if tax is not none %}{{ labels.tax or "Tax" }}{% if tax_rate %} ({{ tax_rate | num }}%){% endif %}: {{ tax | money }}
+{% endif %}
+{{ labels.total or "Total" }}: {{ total | money }}
+{% if notes %}
+
+{{ labels.notes or "Notes" }}:
+{{ notes }}
+{% endif %}

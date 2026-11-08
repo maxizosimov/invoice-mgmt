@@ -1,0 +1,49 @@
+# European style: A4, euro after the amount, comma decimals, VAT wording.
+# Shows how little is needed to adapt: only overrides of `default`.
+extends: default
+name: eu-vat
+description: EU invoice - A4, EUR, comma decimals, VAT labels.
+
+fields:
+  currency: {type: string, default: EUR}
+  seller.tax_id: {type: string, required: true, label: VAT number}
+  subtotal: {type: money, decimal_separator: ","}
+  tax:      {type: money, decimal_separator: ","}
+  total:    {type: money, decimal_separator: ","}
+  items:
+    type: list
+    item_fields:
+      description: {type: string}
+      quantity:    {type: number, decimal_separator: ","}
+      unit_price:  {type: money, decimal_separator: ","}
+      amount:      {type: money, decimal_separator: ","}
+
+match:
+  - '\bVAT\b'
+  - '€|\bEUR\b'
+
+extract:
+  date_formats: ['%d.%m.%Y', '%d/%m/%Y', '%d-%m-%Y']   # day-first dates
+  fields:
+    subtotal: {patterns: ['^\s*(?:sub\s*-?\s*total|net\s+amount|net)\b[^\n]*?(?P<value>-?[\d.]+,\d{2})']}
+    tax:      {patterns: ['^\s*(?:vat|tax)\b[^\n]*?(?P<value>[\d.]+,\d{2})']}
+    tax_rate: {patterns: ['(?:vat|tax)\s*\(?\s*(?P<value>\d+(?:,\d+)?)\s*%'], type: number, decimal_separator: ","}
+    total:    {patterns: ['^\s*(?:total|amount\s+due|gross)\b[^\n]*?(?P<value>-?[\d.]+,\d{2})']}
+    seller.tax_id: {patterns: ['VAT\s*(?:no\.?|number|id|reg\.?)?\s*[:#]?\s*(?P<value>[A-Z]{2}[A-Z0-9]{6,14})']}
+  line_items:
+    row:
+      - '^(?P<description>.+?)\s+(?P<quantity>\d+(?:,\d+)?)\s+(?P<unit_price>[\d.]+,\d{2})\s*\D{0,3}\s+(?P<amount>[\d.]+,\d{2})\s*\D{0,3}$'
+
+render:
+  currency_symbol: "€"
+  symbol_position: after
+  thousands_separator: "."
+  decimal_separator: ","
+  date_format: "%d.%m.%Y"
+  labels:
+    tax: VAT
+    tax_id: VAT No
+  pdf:
+    page_size: a4
+    accent_color: "#0b6e4f"
+    footer: "{{ seller.name }} · VAT No. {{ seller.tax_id }}"
