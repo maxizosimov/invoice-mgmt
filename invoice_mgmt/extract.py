@@ -14,10 +14,11 @@ named groups, or ``table`` mode matching column headers of real tables.
 
 from __future__ import annotations
 
+import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-from .model import coerce, compute_totals, get_path, set_path, validate
+from .model import coerce, compute_totals, flatten, get_path, set_path, validate
 from .readers import Document, read_document
 from .template import Template, list_templates, load_template
 
@@ -229,13 +230,162 @@ def _field_spec(fields, path, rule, rules) -> Dict[str, Any]:
 
 
 # -- main entry point -------------------------------------------------------------
+ENGINES = ("verify", "llm", "rules")
+ENGINE_ENV = "INVOICE_ENGINE"
+
+
 def extract(doc_or_path, template: Optional[Template] = None, extra_dirs=None,
-            compute: bool = True) -> Dict[str, Any]:
-    """Extract structured data. Returns ``{"data": ..., "warnings": [...], "template": name}``."""
+            compute: bool = True, engine: Optional[str] = None,
+            llm_options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Extract structured data from an invoice.
+
+    ``engine``:
+      * ``"verify"`` (default) - template rules extract, then a local LLM confirms or
+        corrects *every field* and quotes its evidence; result has a per-field report.
+        Falls back to rules-only (with a notice) if no local LLM is reachable.
+      * ``"llm"``    - the local LLM alone reads the invoice
+      * ``"rules"``  - only the template's regex rules (fast, deterministic, no model)
+
+    Returns ``{"source", "template", "engine", "data", "warnings"}`` plus ``"fields"``
+    (per-field verification report) for the verify engine.
+    """
     doc = doc_or_path if isinstance(doc_or_path, Document) else read_document(doc_or_path)
     if template is None:
         template, _ = detect_template(doc.text, extra_dirs)
+    engine = (engine or os.environ.get(ENGINE_ENV) or (template.data.get("llm") or {}).get("engine")
+              or "verify")
+    if engine == "auto":
+        engine = "verify"
+    if engine not in ENGINES:
+        raise ValueError(f"engine must be one of {ENGINES}, got '{engine}'")
 
+    if engine == "rules":
+        return extract_rules(doc, template, compute)
+
+    from .llm import LLMError, extract_with_llm
+
+    if engine == "llm":
+        return extract_with_llm(doc, template, compute=compute, **(llm_options or {}))
+
+    rules_res = extract_rules(doc, template, compute=False)
+    try:
+        from .llm import ask_verification
+        answer, model = ask_verification(doc, template, rules_res["data"], **(llm_options or {}))
+    except LLMError as exc:
+        if compute:
+            compute_totals(rules_res["data"])
+        rules_res["warnings"] = validate(rules_res["data"], template.fields)
+        rules_res["notice"] = f"Local LLM unavailable - fields NOT verified, template rules only: {exc}"
+        return rules_res
+    data, report, warnings = merge_verification(doc, template, rules_res["data"], answer)
+    if compute:
+        compute_totals(data)
+    return {
+        "source": rules_res["source"],
+        "template": template.name,
+        "engine": f"rules+llm-verify:{model}",
+        "data": data,
+        "fields": report,
+        "warnings": validate(data, template.fields) + warnings,
+    }
+
+
+# -- verification merge -------------------------------------------------------------
+def _norm(s: Any) -> str:
+    return re.sub(r"[\s,]+", " ", str(s)).strip().lower()
+
+
+def evidence_found(evidence: Any, text: str) -> bool:
+    return bool(evidence) and _norm(evidence) in _norm(text)
+
+
+def _same(a: Any, b: Any) -> bool:
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        return abs(a - b) < 0.005
+    return _norm(a) == _norm(b)
+
+
+def merge_verification(doc: Document, template: Template, candidates: Dict[str, Any],
+                       answer: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any], List[str]]:
+    """Combine rule candidates with the LLM's verdicts.
+
+    Per-field status:
+      confirmed   rules and LLM agree
+      corrected   LLM disagrees with rules -> LLM value used
+      added       rules found nothing, LLM found a value
+      unconfirmed rules found a value, LLM could not find it -> rules value kept
+      missing     neither found anything
+    ``evidence_ok`` is False when the LLM's quoted evidence is not in the document
+    (possible hallucination) - such LLM values are never silently accepted.
+    """
+    fields = template.fields
+    rules_cfg = template.extract
+    data: Dict[str, Any] = {}
+    report: Dict[str, Any] = {}
+    warnings: List[str] = []
+
+    for path, spec in fields.items():
+        spec = spec or {}
+        if spec.get("type") == "list":
+            continue
+        rule_val = get_path(candidates, path)
+        entry = answer.get(path) if isinstance(answer.get(path), dict) else {}
+        raw_llm = entry.get("value")
+        fspec = _field_spec(fields, path, None, rules_cfg)
+        llm_val = coerce(raw_llm, fspec.get("type", "string"), fspec) if raw_llm not in (None, "") else None
+        evidence = entry.get("evidence")
+        ev_ok = evidence_found(evidence, doc.text) if llm_val is not None else None
+
+        if rule_val in (None, "") and llm_val is None:
+            status, final = "missing", None
+        elif llm_val is None:
+            status, final = "unconfirmed", rule_val
+            warnings.append(f"{path}: LLM could not confirm rules value {rule_val!r}")
+        elif rule_val in (None, ""):
+            status, final = "added", llm_val
+            if not ev_ok:
+                warnings.append(f"{path}: LLM value {llm_val!r} has no matching evidence in the document")
+        elif _same(rule_val, llm_val):
+            status, final = "confirmed", rule_val
+        else:
+            status = "corrected"
+            if ev_ok:
+                final = llm_val
+                warnings.append(f"{path}: corrected {rule_val!r} -> {llm_val!r} (evidence: {evidence!r})")
+            else:
+                final = rule_val
+                warnings.append(f"{path}: LLM suggested {llm_val!r} instead of {rule_val!r} but its evidence "
+                                f"was not found in the document - kept rules value, please check")
+        if final not in (None, ""):
+            set_path(data, path, final)
+        if status != "missing":
+            report[path] = {"status": status, "value": final, "rules": rule_val, "llm": llm_val,
+                            "evidence": evidence, "evidence_ok": ev_ok}
+
+    # line items
+    rule_items = candidates.get("items") or []
+    from .llm import normalise
+    llm_items = normalise({"items": answer.get("items") or []}, {"items": fields.get("items") or {}}).get("items", [])
+    if not llm_items:
+        status, items = ("unconfirmed" if rule_items else "missing"), rule_items
+    elif not rule_items:
+        status, items = "added", llm_items
+    elif len(rule_items) == len(llm_items) and all(
+            _same(a.get("amount"), b.get("amount")) for a, b in zip(rule_items, llm_items)):
+        status, items = "confirmed", rule_items
+    else:
+        status, items = "corrected", llm_items
+        warnings.append(f"items: rules found {len(rule_items)} line(s), LLM found {len(llm_items)} - "
+                        "used LLM lines, please check")
+    if items:
+        data["items"] = items
+    report["items"] = {"status": status, "count": len(items), "rules_count": len(rule_items),
+                       "llm_count": len(llm_items)}
+    return data, report, warnings
+
+
+def extract_rules(doc: Document, template: Template, compute: bool = True) -> Dict[str, Any]:
+    """Regex/template-rule extraction (no model needed)."""
     fields = template.fields
     rules = template.extract
     data: Dict[str, Any] = {}
@@ -272,6 +422,7 @@ def extract(doc_or_path, template: Optional[Template] = None, extra_dirs=None,
     return {
         "source": str(doc.path) if doc.path else None,
         "template": template.name,
+        "engine": "rules",
         "data": data,
         "warnings": warnings,
     }

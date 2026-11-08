@@ -23,6 +23,7 @@ import yaml
 
 from . import __version__
 from .extract import detect_template, extract
+from .llm import LLMError
 from .fill import FORMATS, FillError, fill, list_pdf_form_fields
 from .model import flatten, set_path
 from .readers import ReaderError, read_document
@@ -107,7 +108,9 @@ def _to_csv(results: List[Dict[str, Any]], items: bool) -> str:
             for idx, item in enumerate(data.get("items") or [], 1):
                 rows.append({**base, "invoice_number": data.get("invoice_number"), "line": idx, **item})
         else:
-            rows.append({**base, **header, "item_count": len(data.get("items") or []),
+            status = {f"{k}__status": v["status"] for k, v in (r.get("fields") or {}).items()}
+            rows.append({**base, "engine": r.get("engine"), **header,
+                         "item_count": len(data.get("items") or []), **status,
                          "warnings": "; ".join(r.get("warnings") or [])})
     keys: List[str] = []
     for row in rows:
@@ -130,10 +133,16 @@ def cmd_extract(args) -> int:
             tpl, _ = detect_template(doc.text, args.templates_dir)
         else:
             tpl = load_template(args.template, args.templates_dir)
-        res = extract(doc, tpl, compute=not args.no_compute)
+        llm_opts = {"model": args.model, "base_url": args.llm_url, "provider": args.provider}
+        res = extract(doc, tpl, compute=not args.no_compute, engine=args.engine, llm_options=llm_opts)
         results.append(res)
+        name = Path(f).name
+        if res.get("notice"):
+            print(f"notice [{name}]: {res['notice']}", file=sys.stderr)
+        if res.get("fields") and not args.quiet:
+            _print_report(name, res, sys.stderr)
         for w in res["warnings"]:
-            print(f"warning [{Path(f).name}]: {w}", file=sys.stderr)
+            print(f"warning [{name}]: {w}", file=sys.stderr)
 
     if args.format == "csv":
         text = _to_csv(results, args.items)
@@ -147,6 +156,40 @@ def cmd_extract(args) -> int:
             text = json.dumps(payload, indent=2, ensure_ascii=False)
     _emit(text, args.output)
     return 1 if args.strict and any(r["warnings"] for r in results) else 0
+
+
+STATUS_MARK = {"confirmed": "OK ", "corrected": "FIX", "added": "NEW", "unconfirmed": "?? ", "missing": "-- "}
+
+
+def _print_report(name: str, res: Dict[str, Any], out) -> None:
+    report = res["fields"]
+    counts: Dict[str, int] = {}
+    for entry in report.values():
+        counts[entry["status"]] = counts.get(entry["status"], 0) + 1
+    print(f"== {name}: field verification ({res['engine']})", file=out)
+    for path, e in report.items():
+        mark = STATUS_MARK.get(e["status"], "   ")
+        if path == "items":
+            detail = f"{e['count']} line(s) (rules {e['rules_count']}, llm {e['llm_count']})"
+        else:
+            detail = repr(e["value"])
+            if e["status"] == "corrected":
+                detail += f"   (rules had {e['rules']!r})"
+            if e.get("evidence_ok") is False:
+                detail += "   [evidence NOT found in document]"
+        print(f"  [{mark}] {e['status']:<11} {path:<22} {detail}", file=out)
+    print("  " + ", ".join(f"{v} {k}" for k, v in sorted(counts.items())), file=out)
+
+
+def cmd_llm_check(args) -> int:
+    from .llm import LLMError, check
+    tpl = load_template(args.template, args.templates_dir)
+    try:
+        print(check(tpl, model=args.model, base_url=args.llm_url, provider=args.provider))
+        return 0
+    except LLMError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
 
 
 def cmd_fill(args) -> int:
@@ -277,6 +320,14 @@ def cmd_form_fields(args) -> int:
 
 
 # -- parser ------------------------------------------------------------------------
+def _llm_args(parser) -> None:
+    g = parser.add_argument_group("local LLM")
+    g.add_argument("--model", help="model name (default qwen2.5:7b; env INVOICE_LLM_MODEL)")
+    g.add_argument("--provider", choices=["ollama", "openai"],
+                   help="ollama (default) or openai-compatible local server, e.g. LM Studio")
+    g.add_argument("--llm-url", help="server URL (default http://localhost:11434 for ollama)")
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="invoice", description="Template-driven invoice extraction and filling.")
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -293,7 +344,17 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--data-only", action="store_true", help="omit source/template/warnings wrapper")
     e.add_argument("--no-compute", action="store_true", help="don't derive missing totals")
     e.add_argument("--strict", action="store_true", help="exit 1 if any warnings")
+    e.add_argument("-e", "--engine", choices=["verify", "llm", "rules"],
+                   help="verify (default): rules extract, local LLM confirms/corrects each field; "
+                        "llm: LLM only; rules: regex rules only (env INVOICE_ENGINE)")
+    e.add_argument("-q", "--quiet", action="store_true", help="don't print the per-field report")
+    _llm_args(e)
     e.set_defaults(func=cmd_extract)
+
+    lc = sub.add_parser("llm-check", help="check the local LLM is running and the model is pulled")
+    lc.add_argument("-t", "--template", default="default")
+    _llm_args(lc)
+    lc.set_defaults(func=cmd_llm_check)
 
     f = sub.add_parser("fill", help="generate / fill an invoice from data")
     f.add_argument("data", nargs="?", help="JSON or YAML data file ('-' for stdin)")
@@ -339,7 +400,7 @@ def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     try:
         return args.func(args) or 0
-    except (TemplateError, ReaderError, FillError, FileNotFoundError) as exc:
+    except (TemplateError, ReaderError, FillError, FileNotFoundError, LLMError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

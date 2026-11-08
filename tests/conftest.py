@@ -8,6 +8,14 @@ from invoice_mgmt.cli import SAMPLE_DATA
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 
 
+@pytest.fixture(autouse=True)
+def _rules_engine_by_default(monkeypatch):
+    """Tests are deterministic: no local LLM unless a test mocks one in."""
+    monkeypatch.setenv("INVOICE_ENGINE", "rules")
+    for var in ("INVOICE_LLM_MODEL", "INVOICE_LLM_URL", "INVOICE_LLM_PROVIDER"):
+        monkeypatch.delenv(var, raising=False)
+
+
 @pytest.fixture
 def sample():
     return copy.deepcopy(SAMPLE_DATA)

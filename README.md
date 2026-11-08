@@ -2,10 +2,48 @@
 
 A template-driven invoice tool that works in both directions:
 
-- **Extract** – read invoices (PDF, DOCX, TXT, fillable PDF forms) and get structured data out (JSON / YAML / CSV).
+- **Extract** – read invoices (PDF, DOCX, TXT, fillable PDF forms) and get structured data out (JSON / YAML / CSV). A **local LLM checks every field**.
 - **Fill** – take invoice data (JSON / YAML) and produce an invoice: a styled **PDF**, **HTML**, **DOCX** (from your own Word layout), plain **text**, or a filled-in **PDF form**.
 
 Both directions are driven by one YAML **template**. To support a new vendor layout or a new invoice style, you write a small YAML file that `extends` an existing template and overrides only the parts that differ. You don't change any code.
+
+## How extraction works (local LLM as a field-by-field checker)
+
+Invoices from different senders all look different, so `invoice extract` runs in **verify** mode by default:
+
+1. The template's rules (regex, labels, tables) make a quick first pass at every field.
+2. A **local LLM** (Ollama, LM Studio, or llama.cpp, running on your own machine) gets the document and those candidate values. For **every field** it confirms or corrects the value, and it quotes the exact text in the document that supports it.
+3. The tool checks that the quoted text really appears in the document. If it doesn't, the LLM's value is not accepted silently. This guards against the model making values up.
+4. Each field gets a status:
+
+| Status | Meaning |
+|---|---|
+| `confirmed` | the rules and the LLM agree |
+| `corrected` | the LLM disagreed and its evidence was found in the document → the LLM's value is used |
+| `added` | the rules found nothing; the LLM found the value |
+| `unconfirmed` | the rules found a value that the LLM couldn't confirm → kept, with a warning |
+| `missing` | neither found a value |
+
+```
+== bill.pdf: field verification (rules+llm-verify:ollama/qwen2.5:7b)
+  [OK ] confirmed   invoice_number         'AS-55120'
+  [FIX] corrected   total                  357.36   (rules had 333.98)
+  [NEW] added       buyer.email            'ap@northwind.example'
+  [OK ] confirmed   items                  3 line(s) (rules 3, llm 3)
+```
+
+The full report is also in the JSON output (under `"fields"`) and in the CSV output (as `<field>__status` columns). Other engines are available with `--engine llm` (the model alone) or `--engine rules` (no model; fast and deterministic). If no local LLM is running, verify mode falls back to rules only and prints a notice saying the fields were **not** verified.
+
+### Set up the local LLM (macOS)
+
+```bash
+brew install ollama
+brew services start ollama
+ollama pull qwen2.5:7b
+invoice llm-check
+```
+
+`qwen2.5:7b` (about 5 GB) is the default and runs well on Apple Silicon. You can use any other model with `--model llama3.1:8b`, the `INVOICE_LLM_MODEL` environment variable, or `llm.model` in a template. For LM Studio or llama.cpp, use `--provider openai --llm-url http://localhost:1234/v1`. Templates can give the model vendor-specific hints with `llm.instructions`, and can describe fields with a `description:` on each field.
 
 ## Install
 
@@ -151,15 +189,17 @@ Jinja filters available in every layout: `money`, `date` (with an optional strft
 ```python
 from invoice_mgmt import extract, fill, load_template
 
-result = extract("bill.pdf")                       # auto-detects the template
+result = extract("bill.pdf")                       # auto-detects the template, LLM-verified
 print(result["data"]["total"], result["warnings"])
+print(result["fields"]["total"])                   # {'status': 'confirmed', 'evidence': ..., ...}
+extract("bill.pdf", engine="rules")                # no model
 
 fill(result["data"], load_template("eu-vat"), "copy.pdf")
 ```
 
 ## Limitations
 
-- Scanned PDFs have no text layer. Run them through OCR first (for example `ocrmypdf in.pdf out.pdf`).
+- The LLM reads the text layer, not the page image. Scanned PDFs have no text layer. Run them through OCR first (for example `ocrmypdf in.pdf out.pdf`).
 - Numeric dates such as `03/04/2026` are read month-first unless the template sets `extract.date_formats`.
 
 ## Development

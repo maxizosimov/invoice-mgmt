@@ -198,3 +198,19 @@ render:
     file: null                 # a fillable PDF
     fields: {}                 # {"PDF field name": "seller.name" or "{{ total | money }}"}
     flatten: false
+
+# ---------------------------------------------------------------------------
+# Local LLM (used by `invoice extract`; nothing leaves your machine).
+# engine: verify  -> rules extract, LLM confirms/corrects every field with evidence
+#         llm     -> LLM only;   rules -> regex only (no model needed)
+# Hide a field from the model with `llm: false` in its fields: entry and give the
+# model hints with `description:`.
+# ---------------------------------------------------------------------------
+llm:
+  engine: verify
+  provider: ollama            # or "openai" for LM Studio / llama.cpp server / vLLM
+  model: qwen2.5:7b
+  base_url: null              # default http://localhost:11434 (ollama) / http://localhost:1234/v1
+  timeout: 180
+  max_chars: 24000
+  instructions: ""            # per-template hints, e.g. "Amounts are in EUR; 'Ref' is the invoice number."
