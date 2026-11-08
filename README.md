@@ -10,8 +10,13 @@ Both directions are driven by one YAML **template**. To support a new vendor lay
 ## Install
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate      # run this in each new terminal before using `invoice`
 pip install -e .
 ```
+
+Alternatively, `pipx install -e .` puts `invoice` on your PATH without activating anything.
+Homebrew and other system Pythons refuse a plain `pip install` (the "externally-managed-environment" error), so use one of these two options.
 
 Requires Python 3.9+. Dependencies: PyYAML, Jinja2, pdfplumber, pypdf, reportlab, python-docx.
 
