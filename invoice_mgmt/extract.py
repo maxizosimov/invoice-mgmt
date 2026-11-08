@@ -18,7 +18,7 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-from .model import coerce, compute_totals, flatten, get_path, set_path, validate
+from .model import coerce, compute_totals, flatten, get_path, parse_date, parse_number, set_path, validate
 from .readers import Document, read_document
 from .template import Template, list_templates, load_template
 
@@ -260,18 +260,27 @@ def extract(doc_or_path, template: Optional[Template] = None, extra_dirs=None,
         raise ValueError(f"engine must be one of {ENGINES}, got '{engine}'")
 
     if engine == "rules":
-        return extract_rules(doc, template, compute)
+        res = extract_rules(doc, template, compute)
+        if not doc.has_text and not doc.form_fields:
+            res["notice"] = ("No text layer (scan or photo): rules can't read it. "
+                             "Use --engine verify or llm so the vision model reads the page images.")
+        return res
 
     from .llm import LLMError, extract_with_llm
 
     if engine == "llm":
-        return extract_with_llm(doc, template, compute=compute, **(llm_options or {}))
+        res = extract_with_llm(doc, template, compute=compute, **(llm_options or {}))
+        if not doc.has_text:
+            res["notice"] = VISION_ONLY_NOTICE
+        return res
 
     rules_res = extract_rules(doc, template, compute=False)
     try:
         from .llm import ask_verification
         answer, model = ask_verification(doc, template, rules_res["data"], **(llm_options or {}))
     except LLMError as exc:
+        if not doc.has_text and not doc.form_fields:
+            raise  # nothing the rules can do without text
         if compute:
             compute_totals(rules_res["data"])
         rules_res["warnings"] = validate(rules_res["data"], template.fields)
@@ -280,7 +289,8 @@ def extract(doc_or_path, template: Optional[Template] = None, extra_dirs=None,
     data, report, warnings = merge_verification(doc, template, rules_res["data"], answer)
     if compute:
         compute_totals(data)
-    return {
+    extra = {"notice": VISION_ONLY_NOTICE} if not doc.has_text else {}
+    return {**extra,
         "source": rules_res["source"],
         "template": template.name,
         "engine": f"rules+llm-verify:{model}",
@@ -290,6 +300,11 @@ def extract(doc_or_path, template: Optional[Template] = None, extra_dirs=None,
     }
 
 
+VISION_ONLY_NOTICE = ("No text layer - values were read from page images by the vision model. Evidence "
+                      "can't be located in document text, so each value is only checked against the quote "
+                      "the model gave plus the totals math. Review fields marked 'added'.")
+
+
 # -- verification merge -------------------------------------------------------------
 def _norm(s: Any) -> str:
     return re.sub(r"[\s,]+", " ", str(s)).strip().lower()
@@ -297,6 +312,27 @@ def _norm(s: Any) -> str:
 
 def evidence_found(evidence: Any, text: str) -> bool:
     return bool(evidence) and _norm(evidence) in _norm(text)
+
+
+def value_in_evidence(value: Any, evidence: Any) -> bool:
+    """Consistency check used for image-only documents: does the quote contain the value?"""
+    if value is None or not evidence:
+        return False
+    ev = str(evidence)
+    if isinstance(value, (int, float)):
+        for token in re.findall(r"-?\d[\d.,' ]*\d|\d", ev):
+            token = token.replace(" ", "").replace("'", "")
+            for sep in (".", ","):
+                num = parse_number(token, sep)
+                if num is not None and abs(num - value) < 0.005:
+                    return True
+        return False
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(value)):
+        y, m, d = str(value).split("-")
+        if y in ev and re.search(rf"(?<!\d)0?{int(d)}(?!\d)", ev):
+            return True
+        return parse_date(ev.strip()) == value
+    return _norm(value) in _norm(ev)
 
 
 def _same(a: Any, b: Any) -> bool:
@@ -320,6 +356,7 @@ def merge_verification(doc: Document, template: Template, candidates: Dict[str, 
     """
     fields = template.fields
     rules_cfg = template.extract
+    text_check = doc.has_text
     data: Dict[str, Any] = {}
     report: Dict[str, Any] = {}
     warnings: List[str] = []
@@ -334,7 +371,12 @@ def merge_verification(doc: Document, template: Template, candidates: Dict[str, 
         fspec = _field_spec(fields, path, None, rules_cfg)
         llm_val = coerce(raw_llm, fspec.get("type", "string"), fspec) if raw_llm not in (None, "") else None
         evidence = entry.get("evidence")
-        ev_ok = evidence_found(evidence, doc.text) if llm_val is not None else None
+        if llm_val is None:
+            ev_ok = None
+        elif text_check:
+            ev_ok = evidence_found(evidence, doc.text)
+        else:
+            ev_ok = value_in_evidence(llm_val, evidence)
 
         if rule_val in (None, "") and llm_val is None:
             status, final = "missing", None
@@ -360,7 +402,8 @@ def merge_verification(doc: Document, template: Template, candidates: Dict[str, 
             set_path(data, path, final)
         if status != "missing":
             report[path] = {"status": status, "value": final, "rules": rule_val, "llm": llm_val,
-                            "evidence": evidence, "evidence_ok": ev_ok}
+                            "evidence": evidence, "evidence_ok": ev_ok,
+                            "evidence_check": "document text" if text_check else "quote (image)"}
 
     # line items
     rule_items = candidates.get("items") or []

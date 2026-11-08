@@ -39,11 +39,33 @@ The full report is also in the JSON output (under `"fields"`) and in the CSV out
 ```bash
 brew install ollama
 brew services start ollama
-ollama pull qwen2.5:7b
-invoice llm-check
+ollama pull qwen2.5:7b        # text model
+ollama pull gemma3:12b        # vision model (for scans / photos)
+invoice llm-check             # checks the server and both models
 ```
 
 `qwen2.5:7b` (about 5 GB) is the default and runs well on Apple Silicon. You can use any other model with `--model llama3.1:8b`, the `INVOICE_LLM_MODEL` environment variable, or `llm.model` in a template. For LM Studio or llama.cpp, use `--provider openai --llm-url http://localhost:1234/v1`. Templates can give the model vendor-specific hints with `llm.instructions`, and can describe fields with a `description:` on each field.
+
+### Scans and photos (vision mode)
+
+Scanned PDFs, image-only PDFs, and photos (`.jpg`, `.png`, `.webp`, `.tif`, multi-page TIFF) are read by a **vision model** looking at the page images. You don't need to run OCR first.
+
+```bash
+invoice extract scan.pdf                    # no text layer → vision model (gemma3:12b) reads the pages
+invoice extract receipt-photo.jpg
+invoice extract weird-layout.pdf --vision always   # send page images even for normal PDFs
+invoice extract scan.pdf --vision-model qwen2.5vl:7b
+```
+
+| `llm.vision` / `--vision` | Behaviour |
+|---|---|
+| `auto` (default) | page images are used only when there is no text layer; normal PDFs use the faster text model |
+| `always` | page images **plus** the text layer go to the vision model. This helps with multi-column layouts where the text comes out in a jumbled order |
+| `off` | text only |
+
+On a scan, the model's quoted evidence can't be found in any document text. Instead, each value is checked against the quote the model gave (`evidence_check: quote (image)`), and the math checks still run (line items add up to the subtotal; subtotal + tax = total). The output includes a notice telling you to review the fields marked `added`.
+
+Settings: `vision_model` (default `gemma3:12b`), `max_pages` (default 4), and `image_dpi` (default 150) under `llm:` in a template, or the `INVOICE_VISION` / `INVOICE_VISION_MODEL` environment variables. For iPhone HEIC photos, export them as JPG first.
 
 ## Install
 
@@ -199,7 +221,7 @@ fill(result["data"], load_template("eu-vat"), "copy.pdf")
 
 ## Limitations
 
-- The LLM reads the text layer, not the page image. Scanned PDFs have no text layer. Run them through OCR first (for example `ocrmypdf in.pdf out.pdf`).
+- Vision mode reads at most `max_pages` pages per invoice (default 4). Increase it for long invoices. Vision models are slower: expect tens of seconds per page with `gemma3:12b`.
 - Numeric dates such as `03/04/2026` are read month-first unless the template sets `extract.date_formats`.
 
 ## Development

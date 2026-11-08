@@ -20,8 +20,9 @@ Total payable 975.00
 def fake_model(answer):
     calls = []
 
-    def _call(system, prompt, schema, cfg):
-        calls.append({"system": system, "prompt": prompt, "schema": schema, "cfg": cfg})
+    def _call(system, prompt, schema, cfg, images=None, model=None):
+        calls.append({"system": system, "prompt": prompt, "schema": schema, "cfg": cfg,
+                      "images": images or [], "model": model})
         return json.dumps(answer)
     return _call, calls
 

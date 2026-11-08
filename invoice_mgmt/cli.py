@@ -133,7 +133,8 @@ def cmd_extract(args) -> int:
             tpl, _ = detect_template(doc.text, args.templates_dir)
         else:
             tpl = load_template(args.template, args.templates_dir)
-        llm_opts = {"model": args.model, "base_url": args.llm_url, "provider": args.provider}
+        llm_opts = {"model": args.model, "base_url": args.llm_url, "provider": args.provider,
+                    "vision": args.vision, "vision_model": args.vision_model}
         res = extract(doc, tpl, compute=not args.no_compute, engine=args.engine, llm_options=llm_opts)
         results.append(res)
         name = Path(f).name
@@ -176,7 +177,8 @@ def _print_report(name: str, res: Dict[str, Any], out) -> None:
             if e["status"] == "corrected":
                 detail += f"   (rules had {e['rules']!r})"
             if e.get("evidence_ok") is False:
-                detail += "   [evidence NOT found in document]"
+                detail += ("   [evidence NOT found in document]" if e.get("evidence_check") == "document text"
+                           else "   [value doesn't match the model's quote]")
         print(f"  [{mark}] {e['status']:<11} {path:<22} {detail}", file=out)
     print("  " + ", ".join(f"{v} {k}" for k, v in sorted(counts.items())), file=out)
 
@@ -185,7 +187,8 @@ def cmd_llm_check(args) -> int:
     from .llm import LLMError, check
     tpl = load_template(args.template, args.templates_dir)
     try:
-        print(check(tpl, model=args.model, base_url=args.llm_url, provider=args.provider))
+        print(check(tpl, model=args.model, base_url=args.llm_url, provider=args.provider,
+                    vision=args.vision, vision_model=args.vision_model))
         return 0
     except LLMError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -326,6 +329,10 @@ def _llm_args(parser) -> None:
     g.add_argument("--provider", choices=["ollama", "openai"],
                    help="ollama (default) or openai-compatible local server, e.g. LM Studio")
     g.add_argument("--llm-url", help="server URL (default http://localhost:11434 for ollama)")
+    g.add_argument("--vision", choices=["auto", "always", "off"],
+                   help="read page images with a vision model: auto (default) = only when there is no "
+                        "text layer (scans/photos); always = also for normal PDFs (env INVOICE_VISION)")
+    g.add_argument("--vision-model", help="vision model (default gemma3:12b; env INVOICE_VISION_MODEL)")
 
 
 def build_parser() -> argparse.ArgumentParser:

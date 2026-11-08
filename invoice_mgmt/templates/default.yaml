@@ -211,6 +211,11 @@ llm:
   provider: ollama            # or "openai" for LM Studio / llama.cpp server / vLLM
   model: qwen2.5:7b
   base_url: null              # default http://localhost:11434 (ollama) / http://localhost:1234/v1
-  timeout: 180
+  timeout: 300               # seconds; vision on a 12B model can take a while
   max_chars: 24000
   instructions: ""            # per-template hints, e.g. "Amounts are in EUR; 'Ref' is the invoice number."
+  # Vision: scans, phone photos (.jpg/.png/.heic->jpg) and image-only PDFs are read from page images.
+  vision: auto                # auto = only when there's no text layer; always = also for normal PDFs; off
+  vision_model: gemma3:12b    # any Ollama vision model: gemma3:12b, qwen2.5vl:7b, llama3.2-vision
+  max_pages: 4                # pages sent to the vision model
+  image_dpi: 150
