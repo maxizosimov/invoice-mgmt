@@ -1,0 +1,743 @@
+{
+  "01-modern-services.pdf": {
+    "kind": "Text PDF, modern 2-column layout, hours x rate",
+    "data": {
+      "invoice_number": "BL-2026-0318",
+      "issue_date": "2026-03-18",
+      "due_date": "2026-04-17",
+      "currency": "USD",
+      "po_number": "PO-55102",
+      "seller": {
+        "name": "Bluelake Digital Studio",
+        "address": "88 Pine Street, Floor 3\nPortland, OR 97204",
+        "email": "accounts@bluelake.example"
+      },
+      "buyer": {
+        "name": "Riverside Dental Group",
+        "address": "1450 River Road\nEugene, OR 97401",
+        "email": "billing@riversidedental.example"
+      },
+      "items": [
+        {
+          "description": "UX research & interviews",
+          "quantity": 14,
+          "unit_price": 120.0,
+          "amount": 1680.0
+        },
+        {
+          "description": "Website design (8 templates)",
+          "quantity": 1,
+          "unit_price": 3800.0,
+          "amount": 3800.0
+        },
+        {
+          "description": "Front-end development",
+          "quantity": 32.5,
+          "unit_price": 110.0,
+          "amount": 3575.0
+        },
+        {
+          "description": "Content migration",
+          "quantity": 6,
+          "unit_price": 85.0,
+          "amount": 510.0
+        }
+      ],
+      "tax_rate": 0,
+      "payment_terms": "Net 30",
+      "subtotal": 9565.0,
+      "tax": 0.0,
+      "total": 9565.0
+    }
+  },
+  "02-freelancer-minimal.pdf": {
+    "kind": "Text PDF, monospace, minimal labels",
+    "data": {
+      "invoice_number": "0047",
+      "issue_date": "2026-02-02",
+      "due_date": "2026-02-16",
+      "currency": "USD",
+      "seller": {
+        "name": "Jordan Lee Photography",
+        "email": "jordan@jlphoto.example"
+      },
+      "buyer": {
+        "name": "Maple & Oak Weddings",
+        "address": "22 Elm Court\nBurlington, VT 05401"
+      },
+      "items": [
+        {
+          "description": "Wedding coverage (8h)",
+          "quantity": 1,
+          "unit_price": 2400.0,
+          "amount": 2400.0
+        },
+        {
+          "description": "Second shooter",
+          "quantity": 1,
+          "unit_price": 600.0,
+          "amount": 600.0
+        },
+        {
+          "description": "Printed album 30x30",
+          "quantity": 1,
+          "unit_price": 450.0,
+          "amount": 450.0
+        },
+        {
+          "description": "Travel",
+          "quantity": 120,
+          "unit_price": 0.67,
+          "amount": 80.4
+        }
+      ],
+      "tax_rate": 6.0,
+      "subtotal": 3530.4,
+      "tax": 211.82,
+      "total": 3742.22
+    }
+  },
+  "03-wholesale-multipage.pdf": {
+    "kind": "Text PDF, 2 pages, SKU table, discount + shipping",
+    "data": {
+      "invoice_number": "SO-884213",
+      "issue_date": "2026-01-27",
+      "due_date": "2026-02-26",
+      "currency": "USD",
+      "po_number": "4500018823",
+      "seller": {
+        "name": "Copperline Wholesale Supply",
+        "address": "4100 Commerce Blvd\nReno, NV 89502"
+      },
+      "buyer": {
+        "name": "The Daily Grind Cafe",
+        "address": "9 Main Street\nBoise, ID 83702"
+      },
+      "items": [
+        {
+          "sku": "CW-1000",
+          "description": "Ceramic mug 350ml white",
+          "quantity": 24,
+          "unit_price": 8.57,
+          "amount": 205.68
+        },
+        {
+          "sku": "CW-1007",
+          "description": "Ceramic mug 350ml black",
+          "quantity": 24,
+          "unit_price": 18.96,
+          "amount": 455.04
+        },
+        {
+          "sku": "CW-1014",
+          "description": "Espresso cup set (4)",
+          "quantity": 4,
+          "unit_price": 10.36,
+          "amount": 41.44
+        },
+        {
+          "sku": "CW-1021",
+          "description": "Latte glass 300ml",
+          "quantity": 2,
+          "unit_price": 44.47,
+          "amount": 88.94
+        },
+        {
+          "sku": "CW-1028",
+          "description": "Teapot 1.2L stoneware",
+          "quantity": 12,
+          "unit_price": 7.02,
+          "amount": 84.24
+        },
+        {
+          "sku": "CW-1035",
+          "description": "Coffee grinder burr",
+          "quantity": 10,
+          "unit_price": 3.52,
+          "amount": 35.2
+        },
+        {
+          "sku": "CW-1042",
+          "description": "Pour-over kettle 1L",
+          "quantity": 2,
+          "unit_price": 15.38,
+          "amount": 30.76
+        },
+        {
+          "sku": "CW-1049",
+          "description": "Paper filters #4 (100)",
+          "quantity": 12,
+          "unit_price": 39.73,
+          "amount": 476.76
+        },
+        {
+          "sku": "CW-1056",
+          "description": "Cold brew jar 1.5L",
+          "quantity": 12,
+          "unit_price": 14.13,
+          "amount": 169.56
+        },
+        {
+          "sku": "CW-1063",
+          "description": "Milk jug stainless 600ml",
+          "quantity": 24,
+          "unit_price": 46.03,
+          "amount": 1104.72
+        },
+        {
+          "sku": "CW-1070",
+          "description": "Tamper 58mm",
+          "quantity": 10,
+          "unit_price": 15.5,
+          "amount": 155.0
+        },
+        {
+          "sku": "CW-1077",
+          "description": "Knock box small",
+          "quantity": 12,
+          "unit_price": 19.17,
+          "amount": 230.04
+        },
+        {
+          "sku": "CW-1084",
+          "description": "Barista towel (3)",
+          "quantity": 2,
+          "unit_price": 49.68,
+          "amount": 99.36
+        },
+        {
+          "sku": "CW-1091",
+          "description": "Syrup pump",
+          "quantity": 4,
+          "unit_price": 45.83,
+          "amount": 183.32
+        },
+        {
+          "sku": "CW-1098",
+          "description": "Bamboo tray",
+          "quantity": 6,
+          "unit_price": 19.14,
+          "amount": 114.84
+        },
+        {
+          "sku": "CW-1105",
+          "description": "Sugar dispenser glass",
+          "quantity": 4,
+          "unit_price": 62.28,
+          "amount": 249.12
+        },
+        {
+          "sku": "CW-1112",
+          "description": "Stirrers wooden (1000)",
+          "quantity": 6,
+          "unit_price": 7.99,
+          "amount": 47.94
+        },
+        {
+          "sku": "CW-1119",
+          "description": "Takeaway cup 12oz (50)",
+          "quantity": 10,
+          "unit_price": 7.64,
+          "amount": 76.4
+        },
+        {
+          "sku": "CW-1126",
+          "description": "Takeaway lid 12oz (50)",
+          "quantity": 6,
+          "unit_price": 39.84,
+          "amount": 239.04
+        },
+        {
+          "sku": "CW-1133",
+          "description": "Cup sleeve kraft (100)",
+          "quantity": 2,
+          "unit_price": 47.84,
+          "amount": 95.68
+        },
+        {
+          "sku": "CW-1140",
+          "description": "Napkins 2-ply (500)",
+          "quantity": 12,
+          "unit_price": 9.43,
+          "amount": 113.16
+        },
+        {
+          "sku": "CW-1147",
+          "description": "Chalkboard A-frame",
+          "quantity": 10,
+          "unit_price": 6.5,
+          "amount": 65.0
+        },
+        {
+          "sku": "CW-1154",
+          "description": "Menu holder acrylic",
+          "quantity": 6,
+          "unit_price": 54.17,
+          "amount": 325.02
+        },
+        {
+          "sku": "CW-1161",
+          "description": "Cleaning tablets (100)",
+          "quantity": 12,
+          "unit_price": 57.73,
+          "amount": 692.76
+        },
+        {
+          "sku": "CW-1168",
+          "description": "Descaler 1L",
+          "quantity": 6,
+          "unit_price": 38.16,
+          "amount": 228.96
+        },
+        {
+          "sku": "CW-1175",
+          "description": "Group head brush",
+          "quantity": 24,
+          "unit_price": 5.92,
+          "amount": 142.08
+        },
+        {
+          "sku": "CW-1182",
+          "description": "Thermometer clip-on",
+          "quantity": 24,
+          "unit_price": 15.97,
+          "amount": 383.28
+        },
+        {
+          "sku": "CW-1189",
+          "description": "Scale 2kg 0.1g",
+          "quantity": 6,
+          "unit_price": 64.06,
+          "amount": 384.36
+        },
+        {
+          "sku": "CW-1196",
+          "description": "Shot glass 60ml (2)",
+          "quantity": 4,
+          "unit_price": 56.52,
+          "amount": 226.08
+        },
+        {
+          "sku": "CW-1203",
+          "description": "Storage canister 1kg",
+          "quantity": 10,
+          "unit_price": 19.15,
+          "amount": 191.5
+        },
+        {
+          "sku": "CW-1210",
+          "description": "Biscuit jar",
+          "quantity": 24,
+          "unit_price": 54.47,
+          "amount": 1307.28
+        },
+        {
+          "sku": "CW-1217",
+          "description": "Cake stand 30cm",
+          "quantity": 4,
+          "unit_price": 25.01,
+          "amount": 100.04
+        },
+        {
+          "sku": "CW-1224",
+          "description": "Serving tongs",
+          "quantity": 4,
+          "unit_price": 44.06,
+          "amount": 176.24
+        },
+        {
+          "sku": "CW-1231",
+          "description": "Ice scoop",
+          "quantity": 24,
+          "unit_price": 60.98,
+          "amount": 1463.52
+        }
+      ],
+      "discount": 75.0,
+      "shipping": 48.5,
+      "tax_rate": 7.25,
+      "payment_terms": "Net 30",
+      "subtotal": 9982.36,
+      "tax": 718.28,
+      "total": 10674.14
+    }
+  },
+  "04-uk-vat.pdf": {
+    "kind": "Text PDF, UK 'Tax Invoice', GBP, VAT 20%, dd/mm/yyyy",
+    "data": {
+      "invoice_number": "INV/24/1193",
+      "issue_date": "2026-04-03",
+      "due_date": "2026-05-03",
+      "currency": "GBP",
+      "seller": {
+        "name": "Hartley & Finch Ltd",
+        "address": "Unit 4, Canal Wharf\nLeeds LS11 5PS",
+        "tax_id": "GB 284 1193 07"
+      },
+      "buyer": {
+        "name": "Northgate Lettings",
+        "address": "17 Station Approach\nYork YO24 1AB"
+      },
+      "items": [
+        {
+          "description": "Boiler service",
+          "quantity": 3,
+          "unit_price": 95.0,
+          "amount": 285.0
+        },
+        {
+          "description": "Gas safety certificate (CP12)",
+          "quantity": 3,
+          "unit_price": 65.0,
+          "amount": 195.0
+        },
+        {
+          "description": "Replacement thermostat",
+          "quantity": 1,
+          "unit_price": 142.5,
+          "amount": 142.5
+        },
+        {
+          "description": "Call-out (out of hours)",
+          "quantity": 1,
+          "unit_price": 80.0,
+          "amount": 80.0
+        }
+      ],
+      "tax_rate": 20.0,
+      "payment_terms": "30 days",
+      "subtotal": 702.5,
+      "tax": 140.5,
+      "total": 843.0
+    }
+  },
+  "05-german-rechnung.pdf": {
+    "kind": "Text PDF in German, EUR, 1.234,56 €, MwSt 19%",
+    "data": {
+      "invoice_number": "RE-2026-0412",
+      "issue_date": "2026-03-12",
+      "due_date": "2026-03-26",
+      "currency": "EUR",
+      "seller": {
+        "name": "Weber Haustechnik GmbH",
+        "address": "Industriestraße 12\n70565 Stuttgart",
+        "tax_id": "DE 312 456 789"
+      },
+      "buyer": {
+        "name": "Bäckerei Schmidt",
+        "address": "Marktplatz 3\n71032 Böblingen"
+      },
+      "items": [
+        {
+          "description": "Wartung Kälteanlage",
+          "quantity": 1,
+          "unit_price": 420.0,
+          "amount": 420.0
+        },
+        {
+          "description": "Arbeitszeit Techniker (Std.)",
+          "quantity": 5.5,
+          "unit_price": 68.0,
+          "amount": 374.0
+        },
+        {
+          "description": "Kältemittel R290 (kg)",
+          "quantity": 2,
+          "unit_price": 39.9,
+          "amount": 79.8
+        },
+        {
+          "description": "Anfahrtspauschale",
+          "quantity": 1,
+          "unit_price": 45.0,
+          "amount": 45.0
+        }
+      ],
+      "tax_rate": 19.0,
+      "subtotal": 918.8,
+      "tax": 174.57,
+      "total": 1093.37
+    }
+  },
+  "06-utility-bill.pdf": {
+    "kind": "Text PDF, utility statement: account box, 'Amount due'",
+    "data": {
+      "invoice_number": "7731-0092-4418",
+      "issue_date": "2026-02-28",
+      "due_date": "2026-03-21",
+      "currency": "USD",
+      "seller": {
+        "name": "Cascade Power & Water"
+      },
+      "buyer": {
+        "name": "Alex Moreno",
+        "address": "301 Birch Lane Apt 2\nTacoma, WA 98402"
+      },
+      "items": [
+        {
+          "description": "Electricity 612 kWh",
+          "quantity": 612,
+          "unit_price": 0.1132,
+          "amount": 69.28
+        },
+        {
+          "description": "Water 4,200 gal",
+          "quantity": 1,
+          "unit_price": 38.4,
+          "amount": 38.4
+        },
+        {
+          "description": "Basic service charge",
+          "quantity": 1,
+          "unit_price": 12.5,
+          "amount": 12.5
+        }
+      ],
+      "tax_rate": 3.85,
+      "subtotal": 120.18,
+      "tax": 4.63,
+      "total": 124.81
+    }
+  },
+  "07-receipt.pdf": {
+    "kind": "Text PDF, narrow thermal till receipt",
+    "data": {
+      "invoice_number": "R-20419",
+      "issue_date": "2026-05-09",
+      "currency": "USD",
+      "seller": {
+        "name": "Greenfield Hardware",
+        "address": "512 Oak Ave, Madison, WI 53703"
+      },
+      "items": [
+        {
+          "description": "Deck screws 5lb",
+          "quantity": 2,
+          "unit_price": 24.99,
+          "amount": 49.98
+        },
+        {
+          "description": "Wood stain 1gal",
+          "quantity": 1,
+          "unit_price": 39.95,
+          "amount": 39.95
+        },
+        {
+          "description": "Paint brush 3in",
+          "quantity": 3,
+          "unit_price": 7.49,
+          "amount": 22.47
+        },
+        {
+          "description": "Drop cloth 9x12",
+          "quantity": 1,
+          "unit_price": 12.99,
+          "amount": 12.99
+        }
+      ],
+      "tax_rate": 5.5,
+      "subtotal": 125.39,
+      "tax": 6.9,
+      "total": 132.29
+    }
+  },
+  "08-consulting.docx": {
+    "kind": "Word document with tables",
+    "data": {
+      "invoice_number": "AC-1007",
+      "issue_date": "2026-06-30",
+      "due_date": "2026-07-30",
+      "currency": "USD",
+      "seller": {
+        "name": "Ashcroft Consulting LLC",
+        "address": "200 Congress Ave, Suite 900\nAustin, TX 78701",
+        "email": "finance@ashcroft.example"
+      },
+      "buyer": {
+        "name": "Lone Star Logistics Inc.",
+        "address": "7800 Freight Way\nHouston, TX 77029"
+      },
+      "items": [
+        {
+          "description": "Supply-chain assessment (fixed fee)",
+          "quantity": 1,
+          "unit_price": 12500.0,
+          "amount": 12500.0
+        },
+        {
+          "description": "Workshop facilitation (days)",
+          "quantity": 2,
+          "unit_price": 1800.0,
+          "amount": 3600.0
+        },
+        {
+          "description": "Travel expenses (at cost)",
+          "quantity": 1,
+          "unit_price": 642.18,
+          "amount": 642.18
+        }
+      ],
+      "tax_rate": 0,
+      "payment_terms": "Net 30",
+      "subtotal": 16742.18,
+      "tax": 0.0,
+      "total": 16742.18
+    }
+  },
+  "09-email-invoice.txt": {
+    "kind": "Plain-text invoice pasted from an email",
+    "data": {
+      "invoice_number": "2026-031",
+      "issue_date": "2026-03-31",
+      "due_date": "2026-04-14",
+      "currency": "CAD",
+      "seller": {
+        "name": "Northern Code Works",
+        "email": "hello@northerncode.example"
+      },
+      "buyer": {
+        "name": "Prairie Grain Co-op"
+      },
+      "items": [
+        {
+          "description": "Maintenance retainer - March",
+          "quantity": 1,
+          "unit_price": 1500.0,
+          "amount": 1500.0
+        },
+        {
+          "description": "Bug fixes (hours)",
+          "quantity": 7.5,
+          "unit_price": 95.0,
+          "amount": 712.5
+        }
+      ],
+      "tax_rate": 5.0,
+      "subtotal": 2212.5,
+      "tax": 110.63,
+      "total": 2323.13
+    }
+  },
+  "10-scanned-modern.pdf": {
+    "kind": "SCAN: image-only PDF (no text layer), slightly rotated, noisy",
+    "data": {
+      "invoice_number": "BL-2026-0402",
+      "issue_date": "2026-04-02",
+      "due_date": "2026-05-02",
+      "currency": "USD",
+      "seller": {
+        "name": "Bluelake Digital Studio",
+        "address": "88 Pine Street, Floor 3\nPortland, OR 97204",
+        "email": "accounts@bluelake.example"
+      },
+      "buyer": {
+        "name": "Summit Outdoor Gear",
+        "address": "620 Alpine Way\nBend, OR 97701"
+      },
+      "items": [
+        {
+          "description": "Brand refresh workshop",
+          "quantity": 1,
+          "unit_price": 2200.0,
+          "amount": 2200.0
+        },
+        {
+          "description": "Logo & identity system",
+          "quantity": 1,
+          "unit_price": 4500.0,
+          "amount": 4500.0
+        },
+        {
+          "description": "Design hours",
+          "quantity": 18,
+          "unit_price": 115.0,
+          "amount": 2070.0
+        }
+      ],
+      "tax_rate": 0,
+      "payment_terms": "Net 30",
+      "subtotal": 8770.0,
+      "tax": 0.0,
+      "total": 8770.0
+    }
+  },
+  "11-phone-photo-uk.jpg": {
+    "kind": "PHOTO: JPEG of a printed UK invoice, tilted, uneven light",
+    "data": {
+      "invoice_number": "INV/24/1207",
+      "issue_date": "2026-04-19",
+      "due_date": "2026-05-19",
+      "currency": "GBP",
+      "seller": {
+        "name": "Hartley & Finch Ltd",
+        "address": "Unit 4, Canal Wharf\nLeeds LS11 5PS",
+        "tax_id": "GB 284 1193 07"
+      },
+      "buyer": {
+        "name": "Castlegate Hotel",
+        "address": "1 Castlegate\nYork YO1 9RN"
+      },
+      "items": [
+        {
+          "description": "Kitchen extractor service",
+          "quantity": 1,
+          "unit_price": 260.0,
+          "amount": 260.0
+        },
+        {
+          "description": "Replace fan motor",
+          "quantity": 1,
+          "unit_price": 318.75,
+          "amount": 318.75
+        },
+        {
+          "description": "Labour (hours)",
+          "quantity": 4,
+          "unit_price": 55.0,
+          "amount": 220.0
+        }
+      ],
+      "tax_rate": 20.0,
+      "payment_terms": "30 days",
+      "subtotal": 798.75,
+      "tax": 159.75,
+      "total": 958.5
+    }
+  },
+  "12-photo-receipt.png": {
+    "kind": "PHOTO: PNG of a till receipt",
+    "data": {
+      "invoice_number": "R-20577",
+      "issue_date": "2026-05-21",
+      "currency": "USD",
+      "seller": {
+        "name": "Greenfield Hardware",
+        "address": "512 Oak Ave, Madison, WI 53703"
+      },
+      "items": [
+        {
+          "description": "Garden hose 50ft",
+          "quantity": 1,
+          "unit_price": 34.99,
+          "amount": 34.99
+        },
+        {
+          "description": "Hose nozzle",
+          "quantity": 1,
+          "unit_price": 9.99,
+          "amount": 9.99
+        },
+        {
+          "description": "Potting soil 1cu ft",
+          "quantity": 4,
+          "unit_price": 8.49,
+          "amount": 33.96
+        }
+      ],
+      "tax_rate": 5.5,
+      "subtotal": 78.94,
+      "tax": 4.34,
+      "total": 83.28
+    }
+  }
+}

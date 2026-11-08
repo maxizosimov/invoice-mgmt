@@ -67,6 +67,28 @@ On a scan, the model's quoted evidence can't be found in any document text. Inst
 
 Settings: `vision_model` (default `gemma3:12b`), `max_pages` (default 4), and `image_dpi` (default 150) under `llm:` in a template, or the `INVOICE_VISION` / `INVOICE_VISION_MODEL` environment variables. For iPhone HEIC photos, export them as JPG first.
 
+## Test invoices and accuracy scoring
+
+`examples/test-invoices/` holds 12 **fake** invoices (made-up companies and numbers), each with its own layout, plus `truth.json`, the correct answer for every field:
+
+| File | What it tests |
+|---|---|
+| 01–02 | modern two-column layout with "Date of issue"; a monospace freelancer invoice |
+| 03 | 2-page wholesale invoice: 34 SKU lines, discount, freight |
+| 04–05 | UK "Tax Invoice" (£, VAT, dd/mm/yyyy); a German *Rechnung* (1.234,56 €, MwSt) |
+| 06–07 | utility statement ("Amount due", account number); a thermal till receipt |
+| 08–09 | Word (.docx) invoice; a plain-text invoice pasted from an email |
+| 10–12 | **scan** (image-only PDF), **phone photo** (.jpg), photo of a receipt (.png) |
+
+```bash
+invoice eval examples/test-invoices                  # default: rules + LLM verification
+invoice eval examples/test-invoices --engine rules   # baseline without a model (~35%)
+invoice eval examples/test-invoices --engine llm --model gemma3:12b
+invoice eval examples/test-invoices --only photo     # just the matching files
+```
+
+Each file prints its score, the fields it got wrong (expected vs. got), and the time it took. At the end you get accuracy per field and overall, so you can compare models and settings. `invoice testset -o DIR` regenerates the set.
+
 ## Install
 
 ```bash

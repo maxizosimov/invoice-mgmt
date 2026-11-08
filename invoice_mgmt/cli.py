@@ -195,6 +195,28 @@ def cmd_llm_check(args) -> int:
         return 1
 
 
+def cmd_testset(args) -> int:
+    from .testset import generate
+    out = generate(args.output)
+    files = sorted(p.name for p in out.iterdir() if p.name != "truth.json")
+    print(f"Wrote {len(files)} fake invoices + truth.json to {out}/", file=sys.stderr)
+    for f in files:
+        print(f"  {f}", file=sys.stderr)
+    print(f"\nScore the extractor with:  invoice eval {out}", file=sys.stderr)
+    return 0
+
+
+def cmd_eval(args) -> int:
+    from .evaluate import run
+    tpl = load_template(args.template, args.templates_dir) if args.template else None
+    llm_opts = {"model": args.model, "base_url": args.llm_url, "provider": args.provider,
+                "vision": args.vision, "vision_model": args.vision_model}
+    res = run(args.directory, engine=args.engine, llm_options=llm_opts, template=tpl, only=args.only)
+    if args.json:
+        Path(args.json).write_text(json.dumps(res, indent=2), encoding="utf-8")
+    return 0
+
+
 def cmd_fill(args) -> int:
     data = _load_data(args.data) if args.data else {}
     _deep_update(data, _parse_set(args.set))
@@ -357,6 +379,19 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("-q", "--quiet", action="store_true", help="don't print the per-field report")
     _llm_args(e)
     e.set_defaults(func=cmd_extract)
+
+    ts = sub.add_parser("testset", help="generate fake invoices in many layouts + answer key")
+    ts.add_argument("-o", "--output", default="test-invoices")
+    ts.set_defaults(func=cmd_testset)
+
+    ev = sub.add_parser("eval", help="score extraction against a testset's truth.json")
+    ev.add_argument("directory", nargs="?", default="test-invoices")
+    ev.add_argument("-e", "--engine", choices=["verify", "llm", "rules"])
+    ev.add_argument("-t", "--template", help="force a template (default: auto-detect per file)")
+    ev.add_argument("--only", action="append", help="only files whose name contains this (repeatable)")
+    ev.add_argument("--json", help="also write results to this JSON file")
+    _llm_args(ev)
+    ev.set_defaults(func=cmd_eval)
 
     lc = sub.add_parser("llm-check", help="check the local LLM is running and the model is pulled")
     lc.add_argument("-t", "--template", default="default")

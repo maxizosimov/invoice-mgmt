@@ -1,0 +1,24 @@
+From: Northern Code Works <hello@northerncode.example>
+To: accounts@prairiegrain.example
+Subject: Invoice #2026-031 - Prairie Grain Co-op
+
+Hi team,
+
+Please find our invoice for March below. Payment is due by April 14, 2026.
+
+  Invoice #:   2026-031
+  Issued:      March 31, 2026
+  Bill to:     Prairie Grain Co-op
+
+  - Maintenance retainer - March: 1 x $1500.00 = $1,500.00
+  - Bug fixes (hours): 7.5 x $95.00 = $712.50
+
+  Subtotal:    $2,212.50 CAD
+  GST (5%):    $110.63
+  Total:       $2,323.13 CAD
+
+E-transfer to hello@northerncode.example works best.
+
+Cheers,
+Sam
+Northern Code Works
